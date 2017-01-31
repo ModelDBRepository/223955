@@ -1,0 +1,180 @@
+load_file("nrngui.hoc")
+objref st,g1,g2,g3,mat,fout
+fout = new File()
+stimPos = 0.5
+create soma
+access soma
+celsius = 33
+ntrials = 30
+recordTime = 5
+dt = 0.025
+timesteps = (recordTime)/dt+1
+
+proc createCell(){
+	
+	L=4
+	diam=1/PI
+	insert na
+	gbar_na = 1000
+	ena=55
+
+}
+proc deactivation(){
+	mat = new Matrix(ntrials,timesteps)
+	st = new SEClamp(stimPos)
+	g1 = new Graph()
+	st.dur1 = 100
+	st.dur2 = 10
+	st.dur3 = recordTime
+	st.amp1 = -120
+	st.amp2 = 23
+	
+	for(i=0;i<ntrials;i+=1){
+		counter = 0
+		st.amp3 = -57-i*10
+		finitialize(-98.4)
+		tstop = st.dur1+st.dur2
+		while (t<tstop){
+		fadvance()
+		}
+		g1.beginline()
+		tstop = st.dur1+st.dur2+st.dur3
+		while (t<tstop){
+		g1.line(t,ik(0.5))
+		mat.x(i,counter) = ik(0.5)
+		counter+=1
+		fadvance()
+		}
+		mat.x(i,0) = st.amp3
+	g1.flush()
+		
+	}
+}
+proc activation(){
+	mat = new Matrix(ntrials,timesteps)
+	st = new SEClamp(stimPos)
+	g2 = new Graph()
+	st.dur1 = 100
+	st.dur2 = recordTime
+	st.amp1 = -120
+	for(i=0;i<ntrials;i+=1){
+		counter = 0
+		st.amp2 = -120+i*5
+		finitialize(-98.4)
+		tstop = st.dur1
+		while (t<tstop){
+		fadvance()
+		}
+		g2.beginline()
+		tstop = st.dur1+st.dur2
+		while (t<tstop){
+		g2.line(t,ina(0.5))
+		mat.x(i,counter) = ina(0.5)
+		counter+=1
+		fadvance()
+		}
+		mat.x(i,0) = st.amp2
+	g2.flush()
+		
+	}
+}
+proc activation2(){
+	mat = new Matrix(12,timesteps)
+	st = new SEClamp(stimPos)
+	g2 = new Graph()
+	st.dur1 = 20
+	st.dur2 = recordTime
+	st.amp1 = -122
+	for(i=0;i<12;i+=1){
+		counter = 0
+		st.amp2 = -101+i*15
+		finitialize(-98.4)
+		tstop = st.dur1
+		while (t<tstop){
+		fadvance()
+		}
+		g2.beginline()
+		tstop = st.dur1+st.dur2
+		while (t<tstop){
+		g2.line(t,ik(0.5))
+		mat.x(i,counter) = ik(0.5)
+		counter+=1
+		fadvance()
+		}
+		mat.x(i,0) = st.amp2
+	g2.flush()
+		
+	}
+}
+proc writeMatrix(){localobj temp
+	fout.wopen($s1)
+	temp = new Vector()
+	for (i=0;i<$o2.nrow;i+=1){
+		temp = $o2.getrow(i)
+		temp.vwrite(fout,3)
+	}
+	fout.close()
+}
+
+proc inactivation(){
+	mat = new Matrix(ntrials,timesteps)
+	st = new SEClamp(stimPos)
+	g3 = new Graph()
+	st.dur1 = 100
+	st.dur2 = 10000
+	st.dur3 = 5
+	st.amp1= -130
+	for(i=0;i<ntrials;i+=1){
+		counter = 0
+		st.amp2 = -130 + 5*i
+		st.amp3 = -15
+		finitialize(-130)
+		savedt = dt
+		dt=1
+		tstop =st.dur2+ st.dur1
+		while (t<tstop){
+		fadvance()
+		}
+		g3.beginline()
+		tstop = st.dur1+st.dur2+st.dur3
+		dt = savedt
+		while (t<tstop){
+		g3.line(t,ina(0.5))
+		mat.x(i,counter) = ina(0.5)
+		counter+=1
+		fadvance()
+		}
+		mat.x(i,0) = st.amp2
+	g3.flush()
+		
+	}
+}
+proc initializeGraph(){
+	g1 = new Graph()
+	g1.beginline()
+	tstop = 10000
+	finitialize(-65)
+		while (t<tstop){
+		g1.line(t,v(0.5))
+		fadvance()
+		}
+	g1.flush()
+}
+proc writeMatrix(){localobj temp
+	fout.wopen($s1)
+	temp = new Vector()
+	for (i=0;i<$o2.nrow;i+=1){
+		temp = $o2.getrow(i)
+		temp.vwrite(fout,3)
+	}
+	fout.close()
+}
+createCell()
+//deactivation()
+//writeMatrix("./output/deact_k_currents.dat",mat)
+activation()
+writeMatrix("./output/act_na_currents.dat",mat)
+inactivation()
+writeMatrix("./output/inact_na_currents.dat",mat)
+//activation2()
+//("./output/act2_k_currents.dat",mat)

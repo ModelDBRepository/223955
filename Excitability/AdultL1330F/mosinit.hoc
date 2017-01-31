@@ -1,0 +1,70 @@
+load_file("nrngui.hoc")
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc")load_proc("nrnmainmenu")xopen("28_04_10_num19.hoc")
+
+xopen("Cell parameters.hoc")
+xopen("charge.hoc")parameters()
+geom_nseg()init_channels()
+objref zzzz = new Impedance()func rn() { local rn  init()  // make sure all changes to g, c, ri etc. have taken effect  soma zz.loc(0.5)  // sets origin for impedance calculations to middle of soma  zz.compute(0)  // DC input R  soma { rn = zz.input(0.5) }  // rn is input R at middle of the soma  return rn}t=5tstop=580steps_per_ms=40dt=0.010		proc init() {local saveDt, i	finitialize(v_init)	fcurrent()	saveDt = dt	dt = .5	for i=1,500/dt fadvance()	dt = saveDt	init_channels()	if (cvode.active()) {		cvode.re_init()	} else {		fcurrent()	}	frecord_init()}
+
+
+load_file("all_28_04_10_num19.ses")
+
+
+
+objref sl
+sl = new SectionList()
+sl.wholetree()
+
+objref spbox
+spbox = new VBox()
+spbox.intercept(1)
+
+objref sp
+sp = new PlotShape(sl)
+sp.show(0)
+
+ncmap=13
+vstep=0.0833
+vlow=0
+vhigh=vlow+(ncmap-1)*vstep
+sp.colormap(ncmap,1)
+
+i1=int(3*(ncmap-1)/8)
+//print i1
+for (i=0; i<=i1; i=i+1) {
+	f=i/(3*(ncmap-1)/8)
+	print i,f,0,255*f,255
+	sp.colormap(i,0,255*f,255)
+}
+print " "
+i2=int((ncmap-1)/2)
+for (i=i1+1; i<=i2; i=i+1) {
+	f=(i-3*(ncmap-1)/8)/((ncmap-1)/8)
+	print i,f,0,255,255*(1-f)
+	sp.colormap(i,0,255,255*(1-f))
+}
+print " "
+i3=int(5*(ncmap-1)/8)
+for (i=i2+1; i<=i3; i=i+1) {
+	f=(i-(ncmap-1)/2)/((ncmap-1)/8)
+	print i,f,255*f,255,0
+	sp.colormap(i,255*f,255,0)
+}
+print " "
+for (i=i3+1; i<=ncmap-1; i=i+1) {
+	f=(i-5*(ncmap-1)/8)/(3*(ncmap-1)/8)
+	print i,f,255,255*(1-f),0
+	sp.colormap(i,255,255*(1-f),0)
+} 
+
+sp.variable("overl_charge_")
+sp.exec_menu("Shape Plot")
+//sp.view(-608.167, -740.999, 1548.33, 1812, 509, 84, 276, 323)
+sp.scale(vlow,vhigh)
+
+fast_flush_list.append(sp)
+sp.save_name("fast_flush_list.")
+
+spbox.intercept(0)
+spbox.map("Shape plot",500,20,300,400)
+

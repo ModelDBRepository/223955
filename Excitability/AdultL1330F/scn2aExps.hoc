@@ -1,0 +1,213 @@
+objref G1,vVec,indVec,nc, nil,apVec,G2,fn,voltMat,voltVec,axonVec,axonMat,dendVec,dendMat,stateMatNa,stateMatMut,stateMatNax
+
+getcwd()
+
+proc runSCN2A(){
+voltMat = new Matrix(100.01/dt,600)
+axonMat = new Matrix(100.01/dt,600)
+dendMat = new Matrix(100.01/dt,600)
+inactAtVinitRation = 1
+simnum=0
+counter = 0
+soma nc = new NetCon(&v(.5), nil)
+nc.threshold = -5 // watch out! only one threshold per presyn location
+apVec = new Vector(1100)
+indVec = new Vector()
+nc.record(indVec)
+G1 = new Graph()
+
+na_somaOrig = na_soma1	
+na_aisOrig     = na_ais1
+	init()
+	
+	
+for (aa=1;aa>=1;aa-=0.1){
+	na_soma1 = na_somaOrig*aa
+	na_ais1 = na_aisOrig*aa
+	IClamp[0].amp = 0
+	init_channels()
+counter = 0
+	printf("runing %f %% of Na density\n",aa*100)	
+
+	//na_soma		=	0.5*500		
+
+	tstop = 600
+	IClamp[0].del = 500
+	IClamp[0].dur = 100
+
+		voltVec = new Vector(10001)
+		axonVec = new Vector(10001)
+		dendVec = new Vector(10001)
+	p = 0
+	
+			flg0 = 1
+		flg1 = 1
+	while(IClamp[0].amp<=1){
+		init()
+		timeSteps = (tstop-t)/dt
+	
+		counter=0
+		printf("runing %f",IClamp[0].amp)
+
+		while (t<tstop) {
+			G1.line(t,v(0.5))
+			voltVec.x(counter) = v(0.5)
+			axonVec.x(counter) = axon[0].v(1)
+			dendVec.x(counter) = apic[37].v(0.5)
+			if(v(0.5)>-10 && flg0){
+				print "soma ap"
+				flg0 = 0
+			}
+			if(axon[0].v(1)>-10&& flg1){
+				print "ap axon"
+				flg1 = 0
+			}
+			if(apic[37].v(0.5)>-10 ){
+				print "dend ap"
+				flg0 = 0
+			}
+			fadvance()
+			counter+=1
+		}
+		IClamp[0].amp +=0.05
+		printf("printing %f %f\n",aa,simnum)
+		voltMat = voltMat.setcol(simnum,voltVec) 
+		axonMat = axonMat.setcol(simnum,axonVec) 
+		dendMat = dendMat.setcol(simnum,dendVec) 
+		simnum +=1
+		
+	}
+	G1.flush()
+	
+	//apVec.x(simnum) = IClamp[0].amp
+	//printf("somaCurrent1.amp is %f\n",apVec.x(simnum))
+		//apVec.x(simnum) = somaCurrent1.amp
+		
+}
+fn = new File()
+fn.wopen("Volts.csv")
+voltMat.fprint(fn,"%f,","\n")
+fn.close()
+fn.wopen("VoltsAxon.csv")
+axonMat.fprint(fn,"%f,","\n")
+fn.close()
+fn.wopen("VoltsDend.csv")
+dendMat.fprint(fn,"%f,","\n")
+fn.close()
+}
+/*
+proc printStates(){
+voltMat = new Matrix(100.01/dt,200)
+stateMatNa = new Matrix(100.01/dt,3)
+stateMatNax = new Matrix(100.01/dt,3)
+stateMatMut = new Matrix(100.01/dt,3)
+inactAtVinitRation = 0.93
+simnum=0
+counter = 0
+soma nc = new NetCon(&v(.5), nil)
+nc.threshold = -5 // watch out! only one threshold per presyn location
+apVec = new Vector(1100)
+indVec = new Vector()
+nc.record(indVec)
+G1 = new Graph()
+Kv_soma1 = Kv_soma
+Kv1_soma1 = Kv1_soma
+Kv7_soma1 = Kv7_soma
+Kv1_ais1 = Kv1_ais
+Kv7_ais1 = Kv7_ais
+na_soma1 = na_soma	
+na_ais1      = na_ais
+	init()
+	
+	
+for (aa=10;aa<=10;aa+=.5){
+	IClamp[0].amp = 0
+counter = 0
+	printf("runing %f/10 of Na density\n",aa)	
+
+	
+
+	tstop = 600
+	IClamp[0].del = 500
+	IClamp[0].dur = 100
+	IClamp[0].amp = 1.7
+
+		voltVec = new Vector(10001)
+
+	p = 0
+	
+			flg0 = 1
+		flg1 = 1
+	while(IClamp[0].amp<=1.7){
+		init()
+		timeSteps = (tstop-t)/dt
+	
+		counter=0
+		printf("runing %f",IClamp[0].amp)
+
+		while (t<tstop) {
+			G1.line(t,v(0.5))
+			voltVec.x(counter) = v(0.5)
+			
+			stateMatNa.x(counter,0) = axon[0].c1_na(0.2)+axon[0].c2_na(0.2)+axon[0].c3_na(0.2)
+			stateMatNax.x(counter,0) = axon[0].c1_nax(0.4)+axon[0].c2_nax(0.4)+axon[0].c3_nax(0.4)
+			stateMatMut.x(counter,0) = axon[0].c1_nad12n(0.2)+axon[0].c2_nad12n(0.2)+axon[0].c3_nad12n(0.2)
+			stateMatNa.x(counter,1) = axon[0].i1_na(0.2)+axon[0].i2_na(0.2)+axon[0].i3_na(0.2)+axon[0].i4_na(0.2)
+			stateMatNax.x(counter,1) = axon[0].i1_nax(0.4)+axon[0].i2_nax(0.4)+axon[0].i3_nax(0.4)+axon[0].i4_nax(0.4)
+			stateMatMut.x(counter,1) = axon[0].i1_nad12n(0.2)+axon[0].i2_nad12n(0.2)+axon[0].i3_nad12n(0.2)+axon[0].i4_nad12n(0.2)					
+			stateMatNa.x(counter,2) = axon[0].o_na(0.2)
+			stateMatNax.x(counter,2) = axon[0].o_nax(0.4)
+			stateMatMut.x(counter,2) = axon[0].o_nad12n(0.2)		
+			if(v(0.5)>-10 && flg0){
+				print "soma ap"
+				flg0 = 0
+			}
+			if(axon[0].v(1)>-10&& flg1){
+				print "ap axon"
+				flg1 = 0
+			}
+			if(apic[37].v(0.5)>-10 ){
+				print "dend ap"
+				flg0 = 0
+			}
+			fadvance()
+			counter+=1
+		}
+		IClamp[0].amp +=0.1
+		printf("printing %f %f\n",aa,simnum)
+		voltMat = voltMat.setcol(simnum,voltVec) 
+		simnum +=1
+		
+	}
+	G1.flush()
+	
+	//apVec.x(simnum) = IClamp[0].amp
+	//printf("somaCurrent1.amp is %f\n",apVec.x(simnum))
+		//apVec.x(simnum) = somaCurrent1.amp
+		
+}
+fn = new File()
+fn.wopen("VoltsStates.csv")
+voltMat.fprint(fn,"%f,","\n")
+fn.close()
+
+fn = new File()
+fn.wopen("StatesNa.csv")
+stateMatNa.fprint(fn,"%f,","\n")
+fn.close()
+
+fn = new File()
+fn.wopen("StatesNaMut.csv")
+stateMatMut.fprint(fn,"%f,","\n")
+fn.close()
+
+fn = new File()
+fn.wopen("StatesNax.csv")
+stateMatNax.fprint(fn,"%f,","\n")
+fn.close()
+
+
+}
+
+
+*/
